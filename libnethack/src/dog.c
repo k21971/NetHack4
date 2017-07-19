@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2023-06-18 */
+/* Last modified by Alex Smith, 2023-07-06 */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -266,6 +266,12 @@ mon_arrive(struct monst *mtmp, boolean with_you)
     xyflags = mtmp->xyflags;
     xlocale = mtmp->xlocale;
     ylocale = mtmp->ylocale;
+
+    for (otmp = mtmp->minvent; otmp; otmp = otmp->nobj) {
+        if (!otmp->olev && otmp->timed)
+            panic("Unhandled timed obj %s carried by %s, try again "
+                  "later", killer_xname(otmp), k_monnam(mtmp));
+    }
 
     for (otmp = mtmp->minvent; otmp; otmp = otmp->nobj)
         set_obj_level(mtmp->dlevel, otmp, TRUE);
