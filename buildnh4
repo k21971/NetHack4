@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd ~/nethack4
+cd ~/NetHack4
 mkdir -p build
 cd build
 
