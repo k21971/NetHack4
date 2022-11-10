@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Fredrik Ljungdahl, 2018-01-13 */
+/* Last modified by Alex Smith, 2022-11-10 */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -189,15 +189,26 @@ resolve_uim(enum u_interaction_mode uim, boolean weird_attack, xchar x, xchar y)
                 pline(msgc_cancelled, "As far as you can remember, it's "
                       "not safe to stand there.");
             pline(msgc_controlhelp,
-                  "(Use the 'moveonly' command to move there anyway.)");
+                  "(Use 'moveonly' to move there anyway.)");
             return uia_halt;
         }
 
         if (l->mem_bg >= S_stone && l->mem_bg <= S_trwall &&
             bad_rock(youmonst.data, x, y) && (!uwep || !is_pick(uwep))) {
-            if (!cansee(x, y))
-                pline(msgc_controlhelp, "Use the 'moveonly' command "
-                      "to move into a remembered wall.");
+            if (!cansee(x, y)) {
+                pline(msgc_cancelled, "You remember a wall there.");
+                pline(msgc_controlhelp,
+                      "(Use 'moveonly' to try the move anyway.)");
+            }
+            return uia_halt;
+        }
+
+        if ((l->mem_bg == S_vodoor || l->mem_bg == S_hodoor) && x != u.ux && y != u.uy) {
+            pline(msgc_cancelled, "You can't move diagonally into a doorway.");
+            if (!cansee(x, y)) {
+                pline(msgc_controlhelp,
+                      "(Use 'moveonly' to try the move anyway.)");
+            }
             return uia_halt;
         }
     }
@@ -772,9 +783,14 @@ init_test_move_cache(struct test_move_cache *cache)
 
    This function takes the values of Blind, Stunned, Fumbling, Hallucination,
    Passes_walls, and Ground_based as arguments; repeatedly recalculating them
-   was taking up 34% of the runtime of the entire program before this change. */
+   was taking up 34% of the runtime of the entire program before this change.
+
+   takes_time will be set to TRUE if an attempt to move was made, but failed;
+   otherwise it is left unchanged. This is a hack for now and uim should be
+   involved eventually.  The value is left unused if mode is not DO_MOVE and
+   can be NULL in this case (but must not be NULL for DO_MOVE).*/
 boolean
-test_move(int ux, int uy, int dx, int dy, int dz, int mode,
+test_move(int ux, int uy, int dx, int dy, int dz, int mode, int *takes_time,
           const struct test_move_cache *cache)
 {
     int x = ux + dx;
@@ -786,17 +802,32 @@ test_move(int ux, int uy, int dx, int dy, int dz, int mode,
      *  Check for physical obstacles.  First, the place we are going.
      */
     if (IS_ROCK(tmpr->typ) || tmpr->typ == IRONBARS) {
-        if (cache->blind && mode == DO_MOVE)
-            feel_location(x, y);
         if (cache->passwall && may_passwall(level, x, y)) {
-            ;   /* do nothing */
-        } else if (tmpr->typ == IRONBARS) {
-            if (!(cache->passwall || passes_bars(youmonst.data)))
-                return FALSE;
-        } else if (tunnels(youmonst.data) && !needspick(youmonst.data)) {
+            ; /* do nothing */
+        } else if (tmpr->typ == IRONBARS &&
+                   (cache->passwall || passes_bars(youmonst.data))) {
+            ; /* also do nothing */
+        } else if (tmpr->typ != IRONBARS &&
+                   tunnels(youmonst.data) && !needspick(youmonst.data)) {
+            /* TODO: This should be a uim. */
+
             /* Eat the rock. */
-            if (mode == DO_MOVE && still_chewing(x, y))
+            if (mode == DO_MOVE && still_chewing(x, y)) {
+                *takes_time = TRUE;
                 return FALSE;
+            }
+
+            /* this case succeds, but all future cases fail, so all we care
+               about is messages and time taken */
+
+        } else if (cache->blind && mode == DO_MOVE) {
+            feel_location(x, y);
+            *takes_time = TRUE;
+            pline(msgc_failcurse, "%s", tmpr->typ == IRONBARS ?
+                  "There are iron bars there." : "There's a wall there.");
+            return FALSE;
+        } else if (tmpr->typ == IRONBARS) {
+            return FALSE;
         } else {
             if (mode == DO_MOVE) {
                 /* TODO: These codepaths seem not to be accessible; you get the
@@ -812,8 +843,6 @@ test_move(int ux, int uy, int dx, int dy, int dz, int mode,
         }
     } else if (IS_DOOR(tmpr->typ)) {
         if (closed_door(level, x, y)) {
-            if (cache->blind && mode == DO_MOVE)
-                feel_location(x, y);
             if (cache->passwall)
                 ; /* do nothing */
             else if (can_ooze(&youmonst)) {
@@ -846,6 +875,11 @@ test_move(int ux, int uy, int dx, int dy, int dz, int mode,
                             }
                         } else
                             pline(msgc_cancelled, "That door is closed.");
+                    } else if (cache->blind && mode == DO_MOVE) {
+                        feel_location(x, y);
+                        *takes_time = TRUE;
+                        pline(msgc_failcurse, "There's a door there.");
+                        return FALSE;
                     }
                 } else if (mode == TEST_TRAV || mode == TEST_SLOW)
                     goto testdiag;
@@ -857,8 +891,12 @@ test_move(int ux, int uy, int dx, int dy, int dz, int mode,
                 ((tmpr->doormask & ~D_BROKEN) || Is_rogue_level(&u.uz) ||
                  block_door(x, y))) {
                 /* Diagonal moves into a door are not allowed. */
-                if (cache->blind && mode == DO_MOVE)
+                if (cache->blind && mode == DO_MOVE) {
                     feel_location(x, y);
+                    *takes_time = TRUE;
+                    pline(msgc_failcurse,
+                          "Your move around the corner is blocked by a doorway.");
+                }
                 return FALSE;
             }
             if (mode == TEST_SLOW)
@@ -1178,7 +1216,7 @@ findtravelpath(boolean(*guess) (int, int), schar *dx, schar *dy)
     if (!guess && turnstate.continue_message &&
         distmin(u.ux, u.uy, u.tx, u.ty) == 1) {
         if (test_move(u.ux, u.uy, u.tx - u.ux, u.ty - u.uy, 0,
-                      TEST_MOVE, &cache)) {
+                      TEST_MOVE, NULL, &cache)) {
             *dx = u.tx - u.ux;
             *dy = u.ty - u.uy;
             action_completed();
@@ -1273,7 +1311,7 @@ findtravelpath(boolean(*guess) (int, int), schar *dx, schar *dy)
                         (guess == couldsee_func && !guess(nx, ny)))
                         continue;
 
-                    if (test_move(x, y, nx - x, ny - y, 0, TEST_SLOW, &cache)) {
+                    if (test_move(x, y, nx - x, ny - y, 0, TEST_SLOW, NULL, &cache)) {
                         /* closed doors and boulders usually cause a delay, so
                            prefer another path */
                         if ((int)travel[x][y] > radius - 5) {
@@ -1287,8 +1325,8 @@ findtravelpath(boolean(*guess) (int, int), schar *dx, schar *dy)
                             continue;
                         }
                     }
-                    if (test_move(x, y, nx - x, ny - y, 0, TEST_SLOW, &cache) ||
-                        test_move(x, y, nx - x, ny - y, 0, TEST_TRAV, &cache)) {
+                    if (test_move(x, y, nx - x, ny - y, 0, TEST_SLOW, NULL, &cache) ||
+                        test_move(x, y, nx - x, ny - y, 0, TEST_TRAV, NULL, &cache)) {
                         if ((level->locations[nx][ny].seenv ||
                              (!cache.blind && couldsee(nx, ny)))) {
                             if (nx == ux && ny == uy) {
@@ -1363,7 +1401,7 @@ findtravelpath(boolean(*guess) (int, int), schar *dx, schar *dy)
                     action_completed();
                     return FALSE;
                 }
-                if (test_move(u.ux, u.uy, *dx, *dy, 0, TEST_MOVE, &cache))
+                if (test_move(u.ux, u.uy, *dx, *dy, 0, TEST_MOVE, NULL, &cache))
                     return TRUE;
                 goto found;
             }
@@ -2070,8 +2108,9 @@ domove(const struct nh_cmd_arg *arg, enum u_interaction_mode uim,
         return 1;
     }
 
+    int attempt_took_time = 0;
     if (!test_move(u.ux, u.uy, turnstate.move.dx, turnstate.move.dy, dz,
-                   DO_MOVE, &cache)) {
+                   DO_MOVE, &attempt_took_time, &cache)) {
         /* We can't move there... but maybe we can dig. */
         if (flags.autodig && uim != uim_nointeraction &&
             thismove != occ_move && uwep && is_pick(uwep)) {
@@ -2079,7 +2118,7 @@ domove(const struct nh_cmd_arg *arg, enum u_interaction_mode uim,
             return use_pick_axe(uwep, &newarg);
         }
         action_completed();
-        return 0;
+        return attempt_took_time;
     }
 
     /* Move ball and chain. */
