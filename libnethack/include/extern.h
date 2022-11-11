@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2022-03-23 */
+/* Last modified by Alex Smith, 2022-11-10 */
 /* Copyright (c) Steve Creps, 1988.                               */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -632,7 +632,7 @@ extern boolean bad_rock(const struct permonst *, xchar, xchar);
 extern boolean invocation_pos(const d_level * dlev, xchar x, xchar y);
 extern boolean travelling(void);
 extern void init_test_move_cache(struct test_move_cache *);
-extern boolean test_move(int, int, int, int, int, int,
+extern boolean test_move(int, int, int, int, int, int, int *,
                          const struct test_move_cache *);
 extern void distmap_init(struct distmap_state *, int, int, struct monst *mtmp);
 extern int distmap(struct distmap_state *, int, int);
