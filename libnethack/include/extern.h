@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2022-11-10 */
+/* Last modified by Alex Smith, 2023-06-18 */
 /* Copyright (c) Steve Creps, 1988.                               */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -1048,7 +1048,7 @@ extern struct obj *newobj(int, struct obj *);
 extern void dealloc_obj(struct obj *);
 extern void obj_ice_effects(struct level *, int, int, boolean);
 extern long peek_at_iced_corpse_age(struct obj *);
-extern void set_obj_level(struct level *lev, struct obj *obj);
+extern void set_obj_level(struct level *lev, struct obj *obj, boolean);
 extern struct obj *restore_obj(struct memfile *mf);
 extern void save_obj(struct memfile *mf, struct obj *obj);
 

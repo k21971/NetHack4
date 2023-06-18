@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2022-03-23 */
+/* Last modified by Alex Smith, 2023-06-18 */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -1251,7 +1251,7 @@ place_object(struct obj *otmp, struct level *lev, int x, int y)
     otmp->ox = x;
     otmp->oy = y;
 
-    set_obj_level(lev, otmp);   /* set the level recursively for containers */
+    set_obj_level(lev, otmp, FALSE); /* set the level recursively for containers */
     extract_nobj(otmp, &turnstate.floating_objects, &lev->objlist, OBJ_FLOOR);
 
     if (otmp->timed)
@@ -1635,7 +1635,7 @@ dealloc_obj(struct obj *obj)
 /* update which level the object points back to when it, its container or the
    monster holding it migrate. */
 void
-set_obj_level(struct level *lev, struct obj *obj)
+set_obj_level(struct level *lev, struct obj *obj, boolean in_migration)
 {
     struct obj *cobj;
 
@@ -1644,13 +1644,13 @@ set_obj_level(struct level *lev, struct obj *obj)
     /* note: an item that's mcarried by a migrating monster never has a light
        source attached, even if it's lit, so we don't need to try to transfer
        them (the transfer would fail due to not knowing where the monster is) */
-    if (obj->lamplit && (!mcarried(obj) || obj->ocarry->dlevel != NULL))
+    if (obj->lamplit && (!mcarried(obj) || !in_migration))
 	transfer_lights(obj->olev, lev, obj->o_id);
 
     obj->olev = lev;
 
     for (cobj = obj->cobj; cobj; cobj = cobj->nobj)
-        set_obj_level(lev, cobj);
+        set_obj_level(lev, cobj, in_migration);
 }
 
 
