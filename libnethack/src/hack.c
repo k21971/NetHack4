@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2022-11-10 */
+/* Last modified by Alex Smith, 2023-06-18 */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -176,6 +176,12 @@ resolve_uim(enum u_interaction_mode uim, boolean weird_attack, xchar x, xchar y)
     if (!last_command_was("moveonly")) {
         boolean lava = l->mem_bg == S_lava;
         boolean pool = (l->mem_bg == S_pool || l->mem_bg == S_water);
+        /* The character doesn't memorize the layout of the Plane of Water,
+           so we can't rely on their memory there: instead, treat a cell as
+           having water unless the character can see it doesn't, and turn
+           the check off entirely if the character is blind */
+        if (Is_waterlevel(&u.uz))
+            pool = (is_pool(level, x, y) || !cansee(x, y)) && !Blind;
 
         if (!Levitation && !Flying && !is_clinger(youmonst.data) &&
             (lava || (pool && !HSwimming)) &&
@@ -183,7 +189,7 @@ resolve_uim(enum u_interaction_mode uim, boolean weird_attack, xchar x, xchar y)
 
             if (cansee(x, y))
                 pline(msgc_cancelled,
-                      is_pool(level, x, y) ? "You never learned to swim!" :
+                      pool ? "You never learned to swim!" :
                       "That lava looks rather dangerous...");
             else
                 pline(msgc_cancelled, "As far as you can remember, it's "
