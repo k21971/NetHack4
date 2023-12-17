@@ -731,7 +731,7 @@ doextcmd(nh_bool include_debug)
     } while (retval == &retval_for_help);
 
     /* discover whether there's a binding for this command */
-    if (get_command_key(retval->name, buf, TRUE)) {
+    if (settings.keyhints && get_command_key(retval->name, buf, TRUE)) {
         snprintf(buf2, BUFSZ, "Instead of typing '#%s', you can press '%s'.",
                 retval->name, buf);
         curses_print_message(msgc_controlhelp, buf2);
