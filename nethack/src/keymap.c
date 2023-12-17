@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Fredrik Ljungdahl, 2018-01-05 */
+/* Last modified by Alex Smith, 2023-12-17 */
 /* Copyright (c) Daniel Thaler, 2011 */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -695,6 +695,8 @@ doextcmd(nh_bool include_debug)
     struct nh_cmd_desc *retval = NULL;
     struct nh_cmd_desc retval_for_help; /* only the address matters */
     static const char exthelp[] = "?";
+    char buf[BUFSZ];
+    char buf2[BUFSZ];
 
     size = 0;
     for (i = 0; i < cmdcount; i++)
@@ -727,6 +729,13 @@ doextcmd(nh_bool include_debug)
         if (retval == &retval_for_help)
             doextlist(namelist, desclist, size + 1);
     } while (retval == &retval_for_help);
+
+    /* discover whether there's a binding for this command */
+    if (get_command_key(retval->name, buf, TRUE)) {
+        snprintf(buf2, BUFSZ, "Instead of typing '#%s', you can press '%s'.",
+                retval->name, buf);
+        curses_print_message(msgc_controlhelp, buf2);
+    }
 
     return retval;
 }
