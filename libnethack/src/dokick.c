@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-06-29 */
+/* Last modified by Alex Smith, 2024-06-02 */
 /* Copyright (c) Izchak Miller, Mike Stephenson, Steve Linhart, 1989. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -1290,7 +1290,17 @@ impact_drop(struct obj *missile, xchar x, xchar y, xchar dlev)
            obj_delivery(). */
         toloc = MIGR_NEAR_PLAYER;
         cc.y = dlev;
+
+        /* it is possible that the dungeon is not set, because the player is
+           not in a valid migration location; this happens when kicking a
+           throne, in which case the object remains within the same dungeon */
+        if (cc.x == -1)
+            cc.x = u.uz.dnum;
     }
+
+    /* catch other cases where the dungeon isn't specified */
+    if (cc.x == -1 || cc.y == -1)
+        return;
 
     costly = costly_spot(x, y);
     price = debit = robbed = 0L;
@@ -1354,11 +1364,12 @@ impact_drop(struct obj *missile, xchar x, xchar y, xchar dlev)
         else if (oct == dct)
             pline(msgc_consequence,
                   "%s adjacent %s %s.", dct == 1L ? "The" : "All the", what,
-                  gate_str);
+                  gate_str ? gate_str : "along with you");
         else
             pline(msgc_consequence, "%s adjacent %s %s.",
                   dct == 1L ? "One of the" : "Some of the",
-                  dct == 1L ? "objects falls" : what, gate_str);
+                  dct == 1L ? "objects falls" : what,
+                  gate_str ? gate_str : "along with you");
     }
 
     if (costly && shkp && price) {
