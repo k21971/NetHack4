@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Fredrik Ljungdahl, 2018-01-05 */
+/* Last modified by Alex Smith, 2023-12-17 */
 /* Copyright (c) Daniel Thaler, 2011 */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -166,6 +166,9 @@ static struct nh_option_desc curses_options[] = {
     {"invweight", "Messages and Menus",
      "show item weights in the inventory",
      nh_birth_ingame, OPTTYPE_BOOL, {.b = TRUE}},
+    {"keyhints", "Commands and Confirmations",
+     "suggest faster alternatives than extended commands",
+     nh_birth_ingame, OPTTYPE_BOOL, {.b = TRUE}},
     {"keymap", "Commands and Confirmations",
      "alter the key to command mapping",
      nh_birth_ingame, (enum nh_opttype)OPTTYPE_KEYMAP, {0}},
@@ -230,6 +233,7 @@ static struct nhlib_boolopt_map boolopt_map[] = {
     {"darkgray", &settings.darkgray},
     {"extmenu", &settings.extmenu},
     {"invweight", &settings.invweight},
+    {"keyhints", &settings.keyhints},
     {"mouse", &settings.mouse},
     {"prompt_inline", &settings.prompt_inline},
     {"scores_own", &settings.end_own},

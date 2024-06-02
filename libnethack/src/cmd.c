@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-07-15 */
+/* Last modified by Alex Smith, 2023-07-06 */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -39,6 +39,7 @@ static int wiz_rewind(const struct nh_cmd_arg *);
 static int wiz_polyself(const struct nh_cmd_arg *);
 static int wiz_teleport(const struct nh_cmd_arg *);
 static int wiz_hpset(const struct nh_cmd_arg *);
+static int wiz_muxy(const struct nh_cmd_arg *);
 static int wiz_level_tele(const struct nh_cmd_arg *);
 static int wiz_level_change(const struct nh_cmd_arg *);
 static int wiz_show_seenv(const struct nh_cmd_arg *);
@@ -255,10 +256,12 @@ const struct cmd_desc cmdlist[] = {
      wiz_levelcide, CMD_DEBUG | CMD_EXT},
     {"lightsources", "(DEBUG) show mobile light sources", 0, 0, TRUE,
      wiz_light_sources, CMD_DEBUG | CMD_EXT | CMD_NOTIME},
-    {"levelteleport", "(DEBUG) telport to a different level", C('v'), 0, TRUE,
+    {"levelteleport", "(DEBUG) teleport to a different level", C('v'), 0, TRUE,
      wiz_level_tele, CMD_DEBUG},
     {"monpolycontrol", "(DEBUG) control monster polymorphs", 0, 0, TRUE,
      wiz_mon_polycontrol, CMD_DEBUG | CMD_EXT},
+    {"muxy", "(DEBUG) see where a monster thinks you are", 0, 0, TRUE,
+     wiz_muxy, CMD_DEBUG | CMD_EXT | CMD_ARG_POS | CMD_NOTIME},
     {"panic", "(DEBUG) test fatal error handling", 0, 0, TRUE,
      wiz_panic, CMD_DEBUG | CMD_EXT},
     {"polyself", "(DEBUG) polymorph self", 0, 0, TRUE, wiz_polyself,
@@ -475,6 +478,40 @@ wiz_mon_polycontrol(const struct nh_cmd_arg *arg)
 
     pline(msgc_actionok, "Monster polymorph control is %s.",
           flags.mon_polycontrol ? "on" : "off");
+
+    return 0;
+}
+
+/* #muxy command - see where a monster thinks you are */
+static  int
+wiz_muxy(const struct nh_cmd_arg *arg)
+{
+    coord cc;
+    int ans;
+    struct monst *mtmp;
+
+    cc.x = u.ux;
+    cc.y = u.uy;
+
+    ans = getargpos(arg, &cc, FALSE, "Check muxy of which monster?");
+    if (ans == NHCR_CLIENT_CANCEL) return 0;
+
+    mtmp = m_at(level, cc.x, cc.y);
+    if (!mtmp) {
+        pline(msgc_youdiscover, "There isn't a monster there.");
+        return 0;
+    }
+    if (mtmp->mux == COLNO) {
+        pline(msgc_youdiscover, "%s doesn't know where you are.", noit_Monnam(mtmp));
+        return 0;
+    }
+    cls();
+    display_self();
+    dbuf_set_effect(mtmp->mux, mtmp->muy, dbuf_effect(E_MISC, E_ss1));
+    flush_screen();
+    pline(msgc_youdiscover, "%s thinks you are here.", noit_Monnam(mtmp));
+    win_pause_output(P_MAP);
+    doredraw();
 
     return 0;
 }

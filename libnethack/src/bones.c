@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2015-11-11 */
+/* Last modified by Alex Smith, 2024-06-02 */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985,1993. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -427,6 +427,17 @@ getbones(d_level *levnum)
         } else if (!log_replay_bones(&mf)) {
             log_replay_no_more_options();
         }
+    } else if (!on_level(&u.uz, levnum)) {
+        /* The game reload routines currently don't work for loading levels
+           other than the player's level, meaning that there's no way to load
+           the bones file. It makes sense to not load bones in this situation
+           anyway: the player might never visit the level we're migrating to,
+           and if they don't, we just effectively wasted a bones file.
+
+           For backward compatibility with existing saves, this check must be
+           after the attempt to replay a loaded bones file: many such saves
+           have B! log entries in their logs. */
+        goto fail;
     } else if (program_state.followmode == FM_WATCH) {
         /* Bleh, we beat the main process to the bones file, and we can't
            lock things up in a menu on the client like usual. */
