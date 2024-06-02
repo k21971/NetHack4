@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Fredrik Ljungdahl, 2018-01-15 */
+/* Last modified by Alex Smith, 2024-06-02 */
 /* Copyright (c) Daniel Thaler, 2011.                             */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -194,7 +194,7 @@ log_recover_core(long offset, boolean canreturn, const char *message,
         n = display_menu(&menu, "Viewing interrupted...",
                          PICK_ONE, PLHINT_URGENT, &selected);
 
-        if (n && selected[0] == 1)
+        if (n == 1 && selected[0] == 1)
             terminate(RESTART_PLAY);
         else
             terminate(GAME_DETACHED);
@@ -276,12 +276,12 @@ log_recover_core(long offset, boolean canreturn, const char *message,
                          PICK_ONE, PLHINT_URGENT, &selected);
     }
 
-    if (n && selected[0] == 3) {
+    if (n == 1 && selected[0] == 3) {
         program_state.in_zero_time_command = save_ztc;
         return;
     }
 
-    if (n && selected[0] == 1) {
+    if (n == 1 && selected[0] == 1) {
         /* Automatic recovery. */
 
         /* Get a lock on the file. This is a little like start_updating_logfile,
