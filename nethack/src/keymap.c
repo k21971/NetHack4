@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2023-12-17 */
+/* Last modified by Alex Smith, 2024-06-02 */
 /* Copyright (c) Daniel Thaler, 2011 */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -731,7 +731,7 @@ doextcmd(nh_bool include_debug)
     } while (retval == &retval_for_help);
 
     /* discover whether there's a binding for this command */
-    if (settings.keyhints && get_command_key(retval->name, buf, TRUE)) {
+    if (settings.keyhints && retval && get_command_key(retval->name, buf, TRUE)) {
         snprintf(buf2, BUFSZ, "Instead of typing '#%s', you can press '%s'.",
                 retval->name, buf);
         curses_print_message(msgc_controlhelp, buf2);
